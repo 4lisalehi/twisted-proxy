@@ -21,7 +21,7 @@ server.on('close', () => {
   serverSocket.close();
 });
 
-var httpLookup = (() => {
+const httpLookup = (() => {
   return async (connection, url, remote) => {
     http.get(url, res => {
       let response;
@@ -30,7 +30,7 @@ var httpLookup = (() => {
         response = `${res.statusCode} redirect happened!`;
         httpLookup(res.headers.location,remote);
       }
-      res.on('data', function (chunk) {
+      res.on('data', (chunk) => {
         if (res.statusCode == 404) {
           response = chunk;
         } else if (res.statusCode == 200) {
@@ -48,10 +48,10 @@ var httpLookup = (() => {
 
 server.on('connection', (connection) => {
   connection.on('data', data => {
-    const connection_request = httpHeaders(data);
-    let completeUrl = 'http://' + connection_request.host;
-    if (connection_request.url){
-      completeUrl += connection_request.url;
+    const connectionRequest = httpHeaders(data);
+    let completeUrl = 'http://' + connectionRequest.host;
+    if (connectionRequest.url){
+      completeUrl += connectionRequest.url;
     }
     const remote = {
       address: '127.0.0.1',
@@ -63,7 +63,7 @@ server.on('connection', (connection) => {
 
 // TCP
 
-var TCP_PORT = 44444;
+const TCP_PORT = 44444;
 
 net.createServer((sock) => {
     console.log('CONNECTED TO: ' + sock.remoteAddress +':'+ sock.remotePort);
