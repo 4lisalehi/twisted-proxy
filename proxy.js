@@ -4,42 +4,37 @@ const http = require('http');
 const net = require('net');
 const dns = require('dns');
 const rudp = require('rudp');
-const request = require('request');
 const {lookup} = require('lookup-dns-cache');
 const cares = require('cares');
 
 // UDP
 
-var PORT = 33333;
-var HOST = '127.0.0.1';
+const UDP_PORT = 33333;
+const HOST = '127.0.0.1';
 
-var serverSocket = dgram.createSocket('udp4');
-serverSocket.bind(PORT);
-var server = new rudp.Server(serverSocket);
-
-connections = [];
+const serverSocket = dgram.createSocket('udp4');
+serverSocket.bind(UDP_PORT);
+const server = new rudp.Server(serverSocket);
 
 server.on('close', () => {
-  let current_connection = connections[0];
-  console.log(current_connection);
   console.log('UDP message sent to client ' + address +':'+ remote.port);
   serverSocket.close();
 });
 
-var the_http_lookup = (() => {
-
+var httpLookup = (() => {
   return async (connection, url, remote) => {
     http.get(url, res => {
+      let response;
       res.setEncoding('utf-8');
       if (res.statusCode == 301 || res.statusCode == 302) {
-        let response = `${res.statusCode} redirect happened!`;
-        the_http_lookup(res.headers.location,remote);
+        response = `${res.statusCode} redirect happened!`;
+        httpLookup(res.headers.location,remote);
       }
       res.on('data', function (chunk) {
         if (res.statusCode == 404) {
-          var response = chunk;
+          response = chunk;
         } else if (res.statusCode == 200) {
-          var response = chunk;
+          response = chunk;
         }
         let msg = new Buffer(response.toString());
         connection.send(msg);
@@ -48,42 +43,40 @@ var the_http_lookup = (() => {
         console.log('UDP message sent to client ' + remote.address +':'+ remote.port);
       });
     });
-  }
+  };
 })();
 
-server.on('connection', connection => {
+server.on('connection', (connection) => {
   connection.on('data', data => {
-    var connection_request = httpHeaders(data);
-
-    let complete_url = 'http://' + connection_request.host;
-    if (connection_request.url)
-      complete_url += connection_request.url;
-    let remote = {
+    const connection_request = httpHeaders(data);
+    let completeUrl = 'http://' + connection_request.host;
+    if (connection_request.url){
+      completeUrl += connection_request.url;
+    }
+    const remote = {
       address: '127.0.0.1',
       port: '33333'
     };
-    the_http_lookup(connection, complete_url, remote);
+    httpLookup(connection, completeUrl, remote);
   });
 });
 
 // TCP
 
-var PORT2 = 44444;
+var TCP_PORT = 44444;
 
 net.createServer((sock) => {
-    console.log('CONNECTED: ' + sock.remoteAddress +':'+ sock.remotePort);
+    console.log('CONNECTED TO: ' + sock.remoteAddress +':'+ sock.remotePort);
     sock.on('data', data => {
       console.log('Query ' + sock.remoteAddress + ': ' + data);
       let regexp = /type=(\w+)\s+server=(\S+)\s+target=(\S+)/g;
-      let match = regexp.exec(data)
+      const match = regexp.exec(data)
       let result = '';
-
-
       cares.query(match[3], {
         type: cares.NS_T_A,
         class: cares.NS_C_IN
       }, (err, response) => {
-        if(err) {
+        if (err) {
           throw err;
         }
         console.log(response.header);
@@ -98,14 +91,14 @@ net.createServer((sock) => {
         };
 
         lookup(match[3], options, (err, addresses, family) => {
-          for (let the_address of addresses) {
-            result += 'Address = ' + the_address.address + ' Family = ' + the_address.family + '\n';
+          for (const anAddress of addresses) {
+            result += 'Address = ' + anAddress.address + ' Family = ' + anAddress.family + '\n';
           }
            sock.write(result);
         });
       } else if (match[1] === 'CNAME') {
-        dns.resolveCname(match[3], function (err, addresses) {
-          if(err) {
+        dns.resolveCname(match[3], (err) => {
+          if (err) {
             sock.write('\n' + err);
           } else {
             sock.write(result);
@@ -118,7 +111,7 @@ net.createServer((sock) => {
       console.log('CLOSED: ' + sock.remoteAddress +' '+ sock.remotePort);
     });
     
-}).listen(PORT2, HOST);
+}).listen(TCP_PORT, HOST);
 
-console.log('TCP Server listening on ' + HOST +':'+ PORT2);
+console.log('TCP Server listening on ' + HOST +':'+ TCP_PORT);
 server.emit('listen');
