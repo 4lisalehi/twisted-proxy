@@ -1,12 +1,12 @@
-var net = require('net');
+const net = require('net');
 
-var HOST = '127.0.0.1';
-var PORT = 44444;
+const HOST = '127.0.0.1';
+const PORT = 44444;
 
-var client = new net.Socket();
+const client = new net.Socket();
 client.connect(PORT, HOST, function() {
     console.log('CONNECTED TO: ' + HOST + ':' + PORT);
-	var stdin = process.openStdin();
+	const stdin = process.openStdin();
 
 	stdin.addListener("data", function(d) {
     	client.write(d.toString().trim());
