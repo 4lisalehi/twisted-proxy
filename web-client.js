@@ -6,34 +6,35 @@ const rudp = require('rudp');  // for reliable UDP
 const PORT = 33333;
 const HOST = '127.0.0.1';
 
-var input = [];
+const inputLines = [];
 
-var rl = readline.createInterface({
+const LineReader = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 
-rl.prompt();
+LineReader.prompt();
 
-rl.on('line', cmd => {
-  input.push(cmd);
+LineReader.on('line', (cmd) => {
+  inputLines.push(cmd);
 });
 
-rl.on('close', cmd => {
-  console.log('closing');
-  let msg = new Buffer(input.join('\r\n'));
+LineReader.on('close', (cmd) => {
+  console.log('Closing...');
+  const msg = new Buffer(inputLines.join('\r\n'));
 
-  let clientSocket = dgram.createSocket('udp4');
-  let client = new rudp.Client(clientSocket, HOST, PORT);
+  const clientSocket = dgram.createSocket('udp4');
+  const client = new rudp.Client(clientSocket, HOST, PORT);
 
   client.send(msg);
 
   client.on('data', data => {
-		fs.appendFile('file.mp4', data, err => {
-      if (err)
+		fs.appendFile('file.mp4', data, (err) => {
+      if (err){
         throw err;
-      console.log('Saved!');
+      }
+      console.log('Response saved to file.');
     });
-    // Change file format according to use case
+    // TODO: Change file format according to use case
   });
 });
